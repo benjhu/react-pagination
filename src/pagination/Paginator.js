@@ -89,10 +89,11 @@ export default class extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        Promise.resolve(nextProps.data)
-            .then(data => {
-                this.setState({ data, loaded: true });
-            });
+        if (nextProps.data)
+            Promise.resolve(nextProps.data)
+                .then(data => {
+                    this.setState({ data, loaded: true });
+                });
     }
 
     componentDidMount() {
