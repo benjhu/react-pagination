@@ -23,7 +23,6 @@ export default class extends React.Component {
         this.nextPage = this.nextPage.bind(this);
         this.previousPage = this.previousPage.bind(this);
 
-        this.data = this.props.data;
         this.config = Object.assign({}, defaults, this.props.config);
         this.navigators = [];
 
@@ -37,7 +36,7 @@ export default class extends React.Component {
         } else if (_.isFunction(children)) {
             this.passedFunction = children;
         } else
-            throw new Error("Pagination component did not receive a proper function as a child to render paginated content.");
+            throw new Error("Pagination component did not receive a proper function as a child component to render paginated content.");
 
         this.state = {
             loaded: false,
@@ -54,7 +53,7 @@ export default class extends React.Component {
     }
 
     checkPageBounds(page) {
-        if (!pageIsWithinBounds(this.data.length, this.config.itemsPerPage, page))
+        if (!pageIsWithinBounds(this.state.data.length, this.config.itemsPerPage, page))
             throw new Error(`Unable to navigate to page ${page}.`);
     }
 
@@ -102,18 +101,39 @@ export default class extends React.Component {
             return this.config.loadingComponent;
 
         // Cut the data during render.
+        const children = this.props.children;
+        const toRender = [];
         const sliceStart = this.config.itemsPerPage * (this.state.page - 1);
         const sliceEnd = sliceStart + this.config.itemsPerPage;
 
-        const render = [
-            ...this.state.data.slice(sliceStart, sliceEnd).map(this.passedFunction)
-                .map((element, i) => React.cloneElement(element, { key: i })),
-            ...this.navigators
-        ];
+        const pushToAndMapData = (array, fn) => {
+            array.push(...this.state.data.slice(sliceStart, sliceEnd)
+                .map(fn)
+                .map((element, i) => React.cloneElement(element, { key: i })));
+        };
+
+        if (_.isArray(children)) {
+            let fnExists = false;
+
+            children.forEach(child => {
+                if (_.isFunction(child)) {
+                    if (!fnExists) {
+                        pushToAndMapData(toRender, child);
+                        fnExists = true;
+                    } else child();
+                } else
+                    toRender.push(child);
+            });
+
+            if (!fnExists)
+                throw new Error();
+        }
+
+        else pushToAndMapData(toRender, children);
 
         return (
             <React.Fragment>
-                { render }
+                { toRender }
                 <div>Page: { this.state.page }</div>
                 <button type="button" onClick={ this.previousPage }>Previous</button>
                 <button type="button" onClick={ this.nextPage }>Next</button>
