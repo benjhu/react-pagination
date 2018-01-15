@@ -1,11 +1,13 @@
 import _ from "lodash";
 import React from "react";
+import PropTypes from "prop-types";
 import { pageIsWithinBounds } from "../util/utils";
 import { messageGroup } from "../util/utils";
 
 const defaults = {
     itemsPerPage: 5,
     renderNavigatorsFirst: false,
+    showLoadingComponent: true,
     loadingComponent: (<React.Fragment>Loading...</React.Fragment>)
 };
 
@@ -16,7 +18,7 @@ const filterNavigators = component =>
 
 // TODO:
 
-export default class extends React.Component {
+export default class Paginator extends React.Component {
     constructor(props) {
         super(props);
         this.toPage = this.toPage.bind(this);
@@ -39,9 +41,9 @@ export default class extends React.Component {
             throw new Error("Pagination component did not receive a proper function as a child component to render paginated content.");
 
         this.state = {
-            loaded: false,
             page: 1,
-            data: []
+            data: this.props.initialData,
+            loaded: this.props.initialData && !this.props.promise
         };
     }
 
@@ -89,33 +91,35 @@ export default class extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        if (nextProps.data)
-            Promise.resolve(nextProps.data)
+        if (nextProps.promise) {
+            Promise.resolve(nextProps.promise)
                 .then(data => {
                     this.setState({ data, loaded: true });
                 });
+        }
     }
 
     componentDidMount() {
-        Promise.resolve(this.props.data)
-            .then(data => {
-                this.setState({ data, loaded: true });
-            });
+        // Resolve the promise, provided there is one, after mounting.
+        // If initialData prop is present, that data will be rendered, if not,
+        // the loading component will be displayed.
+        if (this.props.promise)
+            Promise.resolve(this.props.promise)
+                .then(data => {
+                    if (data)
+                        this.setState({ data, loaded: true });
+                });
     }
 
     render() {
-        if (!this.state.loaded)
-            // If the data is still being loaded, use the provided loading component.
-            return this.config.loadingComponent;
-
         // Cut the data during render.
         const children = this.props.children;
         const toRender = [];
         const sliceStart = this.config.itemsPerPage * (this.state.page - 1);
         const sliceEnd = sliceStart + this.config.itemsPerPage;
 
-        const pushToAndMapData = (array, fn) => {
-            array.push(...this.state.data.slice(sliceStart, sliceEnd)
+        const pushToAndMapData = (data, array, fn) => {
+            array.push(...data.slice(sliceStart, sliceEnd)
                 .map(fn)
                 .map((element, i) => React.cloneElement(element, { key: i })));
         };
@@ -126,18 +130,26 @@ export default class extends React.Component {
             children.forEach(child => {
                 if (_.isFunction(child)) {
                     if (!fnExists) {
-                        pushToAndMapData(toRender, child);
-                        fnExists = true;
+                        if (this.state.loaded) {
+                            pushToAndMapData(this.state.data, toRender, child);
+                            fnExists = true;
+                        }
+
+                        else if (this.props.initialData)
+                            pushToAndMapData(this.props.initialData, toRender, child);
+
+                        else if (this.config.showLoadingComponent)
+                            toRender.push(React.cloneElement(this.config.loadingComponent, { key: "__react_pagination_paginator_loading_component" }));
                     } else child();
                 } else
                     toRender.push(child);
             });
 
-            if (!fnExists)
-                throw new Error();
+            if (this.state.loaded && !fnExists)
+                throw new Error("A render prop (a function as a child component) needs to be provided to render paginated data.");
         }
 
-        else pushToAndMapData(toRender, children);
+        else pushToAndMapData(this.state.data, toRender, children);
 
         return (
             <React.Fragment>
@@ -149,3 +161,12 @@ export default class extends React.Component {
         );
     }
 }
+
+Paginator.propTypes = {
+    initialData: PropTypes.array
+};
+
+Paginator.defaultProps = {
+    promise: null,
+    initialData: null
+};
