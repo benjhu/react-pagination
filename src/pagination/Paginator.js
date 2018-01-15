@@ -4,12 +4,7 @@ import PropTypes from "prop-types";
 import { pageIsWithinBounds } from "../util/utils";
 import { messageGroup } from "../util/utils";
 
-const defaults = {
-    itemsPerPage: 5,
-    renderNavigatorsFirst: false,
-    showLoadingComponent: true,
-    loadingComponent: (<React.Fragment>Loading...</React.Fragment>)
-};
+import defaults from "./defaultProperties";
 
 const filterNavigators = component =>
     React.isValidElement(component) &&
@@ -138,8 +133,23 @@ export default class Paginator extends React.Component {
                         else if (this.props.initialData)
                             pushToAndMapData(this.props.initialData, toRender, child);
 
-                        else if (this.config.showLoadingComponent)
-                            toRender.push(React.cloneElement(this.config.loadingComponent, { key: "__react_pagination_paginator_loading_component" }));
+                        else if (this.config.showLoadingComponent) {
+                            const Loading = this.config.loadingComponent;
+                            const loadingKey = "__react_pagination_paginator_loading_component";
+                            let push;
+
+                            if (React.isValidElement(Loading))
+                                push = React.cloneElement(Loading, { key: loadingKey });
+                            else {
+                                try {
+                                    push = (<Loading key={ loadingKey } />);
+                                } catch (error) {
+                                    throw new Error("Faulty loading component provided in Paginator configuration: ", error);
+                                }
+                            }
+
+                            toRender.push(push);
+                        }
                     } else child();
                 } else
                     toRender.push(child);
