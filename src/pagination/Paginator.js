@@ -149,7 +149,10 @@ export default class Paginator extends React.Component {
                 throw new Error("A render prop (a function as a child component) needs to be provided to render paginated data.");
         }
 
-        else pushToAndMapData(this.state.data, toRender, children);
+        else if (_.isFunction(children))
+            pushToAndMapData(this.state.data, toRender, children);
+
+        else throw new Error("A function needs to be nested within the Paginator in order for data to be paginated.");
 
         return (
             <React.Fragment>
