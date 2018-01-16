@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { pageIsWithinBounds } from "../util/utils";
 import { messageGroup } from "../util/utils";
 
-import defaults from "./defaultProperties";
+import defaults, { prefix } from "./defaultProperties";
 
 const filterNavigators = component =>
     React.isValidElement(component) &&
@@ -113,6 +113,8 @@ export default class Paginator extends React.Component {
         const sliceStart = this.config.itemsPerPage * (this.state.page - 1);
         const sliceEnd = sliceStart + this.config.itemsPerPage;
 
+        let navigators = 0;
+
         const pushToAndMapData = (data, array, fn) => {
             array.push(...data.slice(sliceStart, sliceEnd)
                 .map(fn)
@@ -151,8 +153,26 @@ export default class Paginator extends React.Component {
                             toRender.push(push);
                         }
                     } else child();
-                } else
-                    toRender.push(child);
+                }
+
+                else if (React.isValidElement(child) &&
+                            child.type &&
+                            child.type.navigatorName &&
+                            child.type.navigatorName.endsWith("Navigator")) {
+                    const passInProps = { key: `${prefix}paginator_navigator_${navigators++}` };
+
+                    passInProps[prefix.concat("paginator_config")] = this.config;
+                    passInProps[prefix.concat("paginator_to_page_fn")] = this.toPage;
+                    passInProps[prefix.concat("paginator_current_page")] = this.state.page;
+                    passInProps[prefix.concat("paginator_total_entries_count")] =
+                        this.state.data ? this.state.data.length : 0;
+
+                    // TODO: fix props updating in navigators
+
+                    toRender.push(React.cloneElement(child, passInProps));
+                }
+
+                else toRender.push(child);
             });
 
             if (this.state.loaded && !fnExists)
