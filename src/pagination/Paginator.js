@@ -180,6 +180,7 @@ Paginator.propTypes = {
 };
 
 Paginator.defaultProps = {
+    config: {},
     promise: null,
     initialData: null
 };
