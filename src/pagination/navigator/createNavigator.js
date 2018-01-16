@@ -1,31 +1,37 @@
 import React from "react";
 import { NavigatorBase } from "./NavigatorBase";
 
-export default (fn, wrapper) => {
+export default (fn, wrapper, navigatorName) => {
     let Wrap;
 
     if (wrapper)
         Wrap = wrapper;
-    else Wrap = React.Fragment;
 
     class CustomNavigator extends React.Component {
         render() {
-            return (
-                <Wrap>
-                    <NavigatorBase { ...this.props }>
-                        {
-                            fn
-                        }
-                    </NavigatorBase>
-                </Wrap>
+            const insides = (
+                <NavigatorBase { ...this.props }>
+                    {
+                        fn
+                    }
+                </NavigatorBase>
             );
+
+            if (Wrap)
+                return (
+                    <Wrap>
+                        { insides }
+                    </Wrap>
+                );
+
+            return insides;
         }
     }
 
     // Default name for this Navigator.
     // The user can redefine it after calling the createNavigator()
     // function.
-    CustomNavigator.navigatorName = "CustomNavigator";
+    CustomNavigator.navigatorName = navigatorName ? navigatorName : "CustomNavigator";
 
     return CustomNavigator;
 };
