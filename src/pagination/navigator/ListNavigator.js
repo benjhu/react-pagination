@@ -1,9 +1,20 @@
 import React from "react";
+import createNavigator from "./createNavigator";
 
-export default class extends React.Component {
+class ListWrapper extends React.Component {
     render() {
         return (
-            <ul></ul>
+            <ul>{ this.props.children }</ul>
         );
     }
 }
+
+const ListNavigator = createNavigator(params =>
+    (<li>{ params.value }</li>), ListWrapper);
+
+// A Navigator name is a string that ends with 'Navigator'.
+// This way, the Paginator can recognize the Navigator and
+// pass in the correct props.
+ListNavigator.navigatorName = "ListNavigator";
+
+export default ListNavigator;
