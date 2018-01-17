@@ -10,7 +10,7 @@ class ListWrapper extends React.Component {
 }
 
 const ListNavigator = createNavigator(params =>
-    (<li>{ params.value }</li>), ListWrapper);
+    (<li>{ params.value }</li>), ListWrapper, "ListNavigator");
 
 // A Navigator name is a string that ends with 'Navigator'.
 // This way, the Paginator can recognize the Navigator and
