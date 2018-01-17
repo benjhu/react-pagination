@@ -1,6 +1,14 @@
 import React from "react";
 import PropTypes from "prop-types";
 
+export class NavigatorLink extends React.Component {
+    render() {
+        return React.cloneElement(this.props.children({ value: this.props.value }), {
+            onClick: () => { this.props.action(); }
+        });
+    }
+}
+
 export class NavigatorBase extends React.Component {
     constructor(props) {
         super(props);
@@ -21,20 +29,33 @@ export class NavigatorBase extends React.Component {
             this.totalEntries = nextTotalEntries;
     }
 
+    shouldComponentUpdate(nextProps) {
+        const nextEntries = nextProps["__react_pagination_paginator_total_entries_count"];
+        const entries = this.props["__react_pagination_paginator_total_entries_count"];
+        const { itemsPerPage } = this.paginatorConfig;
+
+        const currentPages = Math.ceil(entries / itemsPerPage);
+        const nextPages = Math.ceil(nextEntries / itemsPerPage);
+
+        return currentPages !== nextPages;
+    }
+
     render() {
         const toRender = [];
-        const pages = this.totalEntries / this.paginatorConfig.itemsPerPage;
+        const pages = Math.ceil(this.totalEntries / this.paginatorConfig.itemsPerPage);
 
         for (let i = 0; i < pages; i++) {
             toRender.push(
-                React.cloneElement(this.props.children({ value: i + 1 }), {
-                    key: i, onClick: () => { this.paginatorToPage(i + 1); }
-                })
+                <NavigatorLink value={ i + 1 } key={ i } action={ () => { this.paginatorToPage(i + 1); } }>
+                    {
+                        this.props.children
+                    }
+                </NavigatorLink>
             );
         }
 
         return (
-            <div>{ toRender }</div>
+            <React.Fragment>{ toRender }</React.Fragment>
         );
     }
 }
