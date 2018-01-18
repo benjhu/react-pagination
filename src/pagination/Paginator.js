@@ -6,12 +6,7 @@ import { messageGroup } from "../util/utils";
 
 import defaults, { prefix } from "./defaultProperties";
 
-const filterNavigators = component =>
-    React.isValidElement(component) &&
-    component.type.navigatorName &&
-    component.type.navigatorName.endsWith("Navigator");
-
-// TODO:
+const concat = str => prefix.concat(str);
 
 export default class Paginator extends React.Component {
     constructor(props) {
@@ -21,19 +16,6 @@ export default class Paginator extends React.Component {
         this.previousPage = this.previousPage.bind(this);
 
         this.config = Object.assign({}, defaults, this.props.config);
-        this.navigators = [];
-
-        const children = this.props.children;
-
-        // If there are multiple children, isolate the first child function and
-        // all Navigators.
-        if (_.isArray(children)) {
-            this.passedFunction = children.find(_.isFunction);
-            this.navigators = [...children.filter(filterNavigators)];
-        } else if (_.isFunction(children)) {
-            this.passedFunction = children;
-        } else
-            throw new Error("Pagination component did not receive a proper function as a child component to render paginated content.");
 
         this.state = {
             page: 1,
@@ -108,12 +90,12 @@ export default class Paginator extends React.Component {
 
     render() {
         // Cut the data during render.
-        const children = this.props.children;
+        const { children } = this.props;
+        const { itemsPerPage } = this.config;
+        const Navigator = this.props.navigator;
         const toRender = [];
-        const sliceStart = this.config.itemsPerPage * (this.state.page - 1);
-        const sliceEnd = sliceStart + this.config.itemsPerPage;
-
-        let navigators = 0;
+        const sliceStart = itemsPerPage * (this.state.page - 1);
+        const sliceEnd = sliceStart + itemsPerPage;
 
         const pushToAndMapData = (data, array, fn) => {
             array.push(...data.slice(sliceStart, sliceEnd)
@@ -121,75 +103,49 @@ export default class Paginator extends React.Component {
                 .map((element, i) => React.cloneElement(element, { key: i })));
         };
 
-        if (_.isArray(children)) {
-            let fnExists = false;
-
-            children.forEach(child => {
-                if (_.isFunction(child)) {
-                    if (!fnExists) {
-                        if (this.state.loaded) {
-                            pushToAndMapData(this.state.data, toRender, child);
-                            fnExists = true;
-                        }
-
-                        else if (this.props.initialData)
-                            pushToAndMapData(this.props.initialData, toRender, child);
-
-                        else if (this.config.showLoadingComponent) {
-                            const Loading = this.config.loadingComponent;
-                            const loadingKey = "__react_pagination_paginator_loading_component";
-                            let push;
-
-                            if (React.isValidElement(Loading))
-                                push = React.cloneElement(Loading, { key: loadingKey });
-                            else {
-                                try {
-                                    push = (<Loading key={ loadingKey } />);
-                                } catch (error) {
-                                    throw new Error("Faulty loading component provided in Paginator configuration: ", error);
-                                }
-                            }
-
-                            toRender.push(push);
-                        }
-                    } else child();
-                }
-
-                else if (React.isValidElement(child) &&
-                            child.type &&
-                            child.type.navigatorName &&
-                            child.type.navigatorName.endsWith("Navigator")) {
-                    const passInProps = { key: `${prefix}paginator_navigator_${navigators++}` };
-
-                    passInProps[prefix.concat("paginator_config")] = this.config;
-                    passInProps[prefix.concat("paginator_to_page_fn")] = this.toPage;
-                    passInProps[prefix.concat("paginator_current_page")] = this.state.page;
-                    passInProps[prefix.concat("paginator_total_entries_count")] =
-                        this.state.data ? this.state.data.length : 0;
-
-                    // TODO: fix props updating in navigators
-
-                    toRender.push(React.cloneElement(child, passInProps));
-                }
-
-                else toRender.push(child);
-            });
-
-            if (this.state.loaded && !fnExists)
-                throw new Error("A render prop (a function as a child component) needs to be provided to render paginated data.");
-        }
-
-        else if (_.isFunction(children))
+        if (this.state.loaded)
             pushToAndMapData(this.state.data, toRender, children);
 
+        else if (this.props.initialData)
+            pushToAndMapData(this.props.initialData, toRender, children);
+
+        else if (this.config.showLoadingComponent) {
+            const Loading = this.config.loadingComponent;
+            return (<Loading />);
+        }
+
         else throw new Error("A function needs to be nested within the Paginator in order for data to be paginated.");
+
+        if (Navigator) {
+            const passInProps = {
+                key: "__paginator_navigator",
+
+                [concat("paginator_config")]: this.config,
+                [concat("paginator_to_page_fn")]: this.toPage,
+                [concat("paginator_current_page")]: this.state.page,
+                [concat("paginator_total_entries_count")]:
+                    this.state.data ? this.state.data.length : 0
+            };
+
+            toRender.push(
+                <Navigator
+                    { ...passInProps }
+                />
+            );
+        }
+
+        const ControlsTEMP = () => (
+            <div>
+                <div>Page: { this.state.page }</div>
+                <button type="button" onClick={ this.previousPage }>Previous</button>
+                <button type="button" onClick={ this.nextPage }>Next</button>
+            </div>
+        );
 
         return (
             <React.Fragment>
                 { toRender }
-                <div>Page: { this.state.page }</div>
-                <button type="button" onClick={ this.previousPage }>Previous</button>
-                <button type="button" onClick={ this.nextPage }>Next</button>
+                { <ControlsTEMP /> }
             </React.Fragment>
         );
     }
