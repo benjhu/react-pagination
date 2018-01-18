@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React from "react";
 import PropTypes from "prop-types";
+import PaginatorItem from "./PaginatorItem";
 import { pageIsWithinBounds } from "../util/utils";
 import { messageGroup } from "../util/utils";
 
@@ -99,8 +100,11 @@ export default class Paginator extends React.Component {
 
         const pushToAndMapData = (data, array, fn) => {
             array.push(...data.slice(sliceStart, sliceEnd)
-                .map(fn)
-                .map((element, i) => React.cloneElement(element, { key: i })));
+                .map((entry, i) => {
+                    return (
+                        <PaginatorItem key={ i }>{ fn(entry) }</PaginatorItem>
+                    );
+                }));
         };
 
         if (this.state.loaded)
