@@ -92,7 +92,7 @@ export default class Paginator extends React.Component {
     render() {
         // Cut the data during render.
         const { children } = this.props;
-        const { itemsPerPage } = this.config;
+        const { itemsPerPage, identifier } = this.config;
         const Navigator = this.props.navigator;
         const toRender = [];
         const sliceStart = itemsPerPage * (this.state.page - 1);
@@ -101,6 +101,17 @@ export default class Paginator extends React.Component {
         const pushToAndMapData = (data, array, fn) => {
             array.push(...data.slice(sliceStart, sliceEnd)
                 .map((entry, i) => {
+                    // Use the identifier provided by the user if possible as the key.
+                    if (identifier) {
+                        if (typeof identifier === "function")
+                            i = identifier(entry, i);
+                        else if (entry[identifier])
+                            i = entry[identifier];
+                        else messageGroup(true, false,
+                            ["An identifier was specified, but was not able to resolve; defaulting to indicies."]
+                        );
+                    }
+
                     return (
                         <PaginatorItem key={ i }>{ fn(entry) }</PaginatorItem>
                     );
