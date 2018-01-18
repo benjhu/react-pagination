@@ -38,6 +38,15 @@ export default class Paginator extends React.Component {
     }
 
     toPage(page) {
+        if (this.config.cycle) {
+            const totalPages = Math.ceil(this.state.data.length / this.config.itemsPerPage);
+
+            if (page === 0)
+                page = totalPages;
+            else if (page > totalPages)
+                page = 1;
+        }
+
         this.checkPageBounds(page);
         this.setState({ page });
     }
@@ -46,7 +55,6 @@ export default class Paginator extends React.Component {
         const nextPage = this.state.page + 1;
 
         try {
-            this.checkPageBounds(nextPage);
             this.toPage(nextPage);
         } catch(error) {
             messageGroup(true, false,
@@ -59,7 +67,6 @@ export default class Paginator extends React.Component {
         const previousPage = this.state.page - 1;
 
         try {
-            this.checkPageBounds(previousPage);
             this.toPage(previousPage);
         } catch(error) {
             messageGroup(true, false,
