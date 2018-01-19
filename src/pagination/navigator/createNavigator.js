@@ -1,27 +1,16 @@
 import React from "react";
 import { NavigatorBase } from "./NavigatorBase";
 
-export default (fn, wrapper, navigatorName) => {
-    let Wrap;
-
-    if (wrapper)
-        Wrap = wrapper;
-
+export default (fn, WrapWith, navigatorName) => {
     class CustomNavigator extends React.Component {
         render() {
             const insides = (
-                <NavigatorBase { ...this.props }>
-                    {
-                        fn
-                    }
-                </NavigatorBase>
+                <NavigatorBase { ...this.props }>{ fn }</NavigatorBase>
             );
 
-            if (Wrap)
+            if (WrapWith)
                 return (
-                    <Wrap>
-                        { insides }
-                    </Wrap>
+                    <WrapWith>{ insides }</WrapWith>
                 );
 
             return insides;
