@@ -3,8 +3,10 @@ import PropTypes from "prop-types";
 
 export class NavigatorLink extends React.Component {
     render() {
-        return React.cloneElement(this.props.children({ value: this.props.value }), {
-            onClick: () => { this.props.action(); }
+        const { value, action } = this.props;
+
+        return this.props.children({
+            value, action
         });
     }
 }
@@ -44,9 +46,16 @@ export class NavigatorBase extends React.Component {
         const toRender = [];
         const pages = Math.ceil(this.totalEntries / this.paginatorConfig.itemsPerPage);
 
+        // If the 'renderIf' prop is defined, then we pass the current page and
+        // the current page iteration. If the function returns true, render the Navigator Link.
+        const fn = this.props.renderIf || (() => true);
+
         for (let i = 0; i < pages; i++) {
+            if (!fn(i + 1, this.props["__react_pagination_current_page"]))
+                continue;
+
             toRender.push(
-                <NavigatorLink value={ i + 1 } key={ i } action={ () => { this.paginatorToPage(i + 1); } }>
+                <NavigatorLink key={ i } value={ i + 1 } action={ () => { this.paginatorToPage(i + 1); } }>
                     {
                         this.props.children
                     }
